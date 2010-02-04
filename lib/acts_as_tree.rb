@@ -1,3 +1,5 @@
+require 'active_record/base'
+
 module ActsAsTree
   def self.included(base)
     base.extend(ClassMethods)
