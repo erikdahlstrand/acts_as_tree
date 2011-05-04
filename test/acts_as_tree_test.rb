@@ -55,6 +55,10 @@ class RecursivelyCascadedTreeMixin < Mixin
   has_one :first_child, :class_name => 'RecursivelyCascadedTreeMixin', :foreign_key => :parent_id
 end
 
+class TreeMixinWithDependentNullify < Mixin
+  acts_as_tree :foreign_key => "parent_id", :dependent => :nullify
+end
+
 class TreeTest < Test::Unit::TestCase
   
   def setup
@@ -146,6 +150,41 @@ class TreeTest < Test::Unit::TestCase
     assert_equal [@root1, @root2, @root3], @root2.self_and_siblings
     assert_equal [@root1, @root2, @root3], @root3.self_and_siblings
   end           
+end
+
+class TreeWithDependentNullify < Test::Unit::TestCase
+  
+  def setup
+    setup_db
+    @root1 = TreeMixinWithDependentNullify.create!
+    @root_child1 = TreeMixinWithDependentNullify.create! :parent_id => @root1.id
+    @child1_child = TreeMixinWithDependentNullify.create! :parent_id => @root_child1.id
+    @root_child2 = TreeMixinWithDependentNullify.create! :parent_id => @root1.id
+    @root2 = TreeMixinWithDependentNullify.create!
+    @root3 = TreeMixinWithDependentNullify.create!
+  end
+
+  def teardown
+    teardown_db
+  end  
+  
+  def test_delete
+    assert_equal 6, TreeMixinWithDependentNullify.count
+    @root1.destroy
+    assert_equal 5, TreeMixinWithDependentNullify.count
+    @root2.destroy
+    @root3.destroy
+    assert_equal 3, TreeMixinWithDependentNullify.count
+  end
+  
+  def test_parent_nil
+    @root1.destroy
+    @root2.destroy
+    @root3.destroy
+    assert_equal nil, @root_child1.parent
+    assert_equal nil, @root_child2.parent
+  end
+  
 end
 
 class TreeTestWithEagerLoading < Test::Unit::TestCase
